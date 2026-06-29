@@ -1,7 +1,7 @@
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'produto_interesse_type') THEN
-    CREATE TYPE produto_interesse_type AS ENUM ('Auto', 'Residencial', 'Vida', 'Consórcio', 'Empresarial');
+    CREATE TYPE produto_interesse_type AS ENUM ('Auto', 'Residencial', 'Vida', 'Consorcio', 'Empresarial');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estagio_type') THEN
     CREATE TYPE estagio_type AS ENUM ('novo', 'contato', 'qualificado', 'fechado', 'perdido');
