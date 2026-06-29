@@ -9,7 +9,134 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      interacoes_sdr: {
+        Row: {
+          data_hora: string
+          id: string
+          intencao_detectada: string | null
+          lead_id: string
+          mensagem_cliente: string | null
+          mensagem_ia: string | null
+          sentimento: Database['public']['Enums']['sentimento_type'] | null
+        }
+        Insert: {
+          data_hora?: string
+          id?: string
+          intencao_detectada?: string | null
+          lead_id: string
+          mensagem_cliente?: string | null
+          mensagem_ia?: string | null
+          sentimento?: Database['public']['Enums']['sentimento_type'] | null
+        }
+        Update: {
+          data_hora?: string
+          id?: string
+          intencao_detectada?: string | null
+          lead_id?: string
+          mensagem_cliente?: string | null
+          mensagem_ia?: string | null
+          sentimento?: Database['public']['Enums']['sentimento_type'] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'interacoes_sdr_lead_id_fkey'
+            columns: ['lead_id']
+            isOneToOne: false
+            referencedRelation: 'leads'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          data_atualizacao: string
+          data_criacao: string
+          email: string | null
+          estagio: Database['public']['Enums']['estagio_type'] | null
+          id: string
+          nome: string
+          origem: Database['public']['Enums']['origem_type'] | null
+          prioridade: number | null
+          produto_interesse: Database['public']['Enums']['produto_interesse_type'] | null
+          proxima_acao: string | null
+          telefone: string
+          ultimo_contato: string | null
+          valor_estimado: number | null
+          vendedor_id: string | null
+        }
+        Insert: {
+          data_atualizacao?: string
+          data_criacao?: string
+          email?: string | null
+          estagio?: Database['public']['Enums']['estagio_type'] | null
+          id?: string
+          nome: string
+          origem?: Database['public']['Enums']['origem_type'] | null
+          prioridade?: number | null
+          produto_interesse?: Database['public']['Enums']['produto_interesse_type'] | null
+          proxima_acao?: string | null
+          telefone: string
+          ultimo_contato?: string | null
+          valor_estimado?: number | null
+          vendedor_id?: string | null
+        }
+        Update: {
+          data_atualizacao?: string
+          data_criacao?: string
+          email?: string | null
+          estagio?: Database['public']['Enums']['estagio_type'] | null
+          id?: string
+          nome?: string
+          origem?: Database['public']['Enums']['origem_type'] | null
+          prioridade?: number | null
+          produto_interesse?: Database['public']['Enums']['produto_interesse_type'] | null
+          proxima_acao?: string | null
+          telefone?: string
+          ultimo_contato?: string | null
+          valor_estimado?: number | null
+          vendedor_id?: string | null
+        }
+        Relationships: []
+      }
+      metricas_diarias: {
+        Row: {
+          atendimentos_ana: number | null
+          data: string
+          id: string
+          leads_contatados: number | null
+          leads_fechados: number | null
+          leads_novos: number | null
+          leads_qualificados: number | null
+          qualificados_ana: number | null
+          taxa_conversao: number | null
+          total_whatsapp_ativos: number | null
+        }
+        Insert: {
+          atendimentos_ana?: number | null
+          data?: string
+          id?: string
+          leads_contatados?: number | null
+          leads_fechados?: number | null
+          leads_novos?: number | null
+          leads_qualificados?: number | null
+          qualificados_ana?: number | null
+          taxa_conversao?: number | null
+          total_whatsapp_ativos?: number | null
+        }
+        Update: {
+          atendimentos_ana?: number | null
+          data?: string
+          id?: string
+          leads_contatados?: number | null
+          leads_fechados?: number | null
+          leads_novos?: number | null
+          leads_qualificados?: number | null
+          qualificados_ana?: number | null
+          taxa_conversao?: number | null
+          total_whatsapp_ativos?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +145,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      estagio_type: 'novo' | 'contato' | 'qualificado' | 'fechado' | 'perdido'
+      origem_type: 'whatsapp' | 'site' | 'indicacao' | 'formulario' | 'presencial'
+      produto_interesse_type: 'Auto' | 'Residencial' | 'Vida' | 'Consorcio' | 'Empresarial'
+      sentimento_type: 'positivo' | 'neutro' | 'negativo'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -143,6 +273,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      estagio_type: ['novo', 'contato', 'qualificado', 'fechado', 'perdido'],
+      origem_type: ['whatsapp', 'site', 'indicacao', 'formulario', 'presencial'],
+      produto_interesse_type: ['Auto', 'Residencial', 'Vida', 'Consorcio', 'Empresarial'],
+      sentimento_type: ['positivo', 'neutro', 'negativo'],
+    },
   },
 } as const
