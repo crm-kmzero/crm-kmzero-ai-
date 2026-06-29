@@ -1,5 +1,13 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Users, UserSquare, Settings, ShieldCheck } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Users,
+  Package,
+  UserSquare,
+  BarChart3,
+  Settings,
+  ShieldCheck,
+} from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -10,14 +18,17 @@ import {
   SidebarGroup,
   SidebarGroupContent,
 } from '@/components/ui/sidebar'
+import { cn } from '@/lib/utils'
 
 export function AppSidebar() {
   const location = useLocation()
 
   const items = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Painel', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Leads', path: '/leads', icon: Users },
+    { name: 'Produtos', path: '/produtos', icon: Package },
     { name: 'Vendedores', path: '/sellers', icon: UserSquare },
+    { name: 'Relatórios', path: '/relatorios', icon: BarChart3 },
     { name: 'Configurações', path: '/settings', icon: Settings },
   ]
 
@@ -35,13 +46,21 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu className="mt-4 gap-2 px-2">
+            <SidebarMenu className="mt-4 gap-1 px-2">
               {items.map((item) => {
                 const isActive = location.pathname.startsWith(item.path)
                 return (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild isActive={isActive} className="text-sm font-medium">
-                      <Link to={item.path} className="flex items-center gap-3 px-3 py-2">
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link
+                        to={item.path}
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                          isActive
+                            ? 'bg-[#EBF5FF] text-[#0066FF] border-l-2 border-[#0066FF]'
+                            : 'text-[#6B7280] hover:bg-slate-50',
+                        )}
+                      >
                         <item.icon className="h-5 w-5" />
                         <span>{item.name}</span>
                       </Link>
