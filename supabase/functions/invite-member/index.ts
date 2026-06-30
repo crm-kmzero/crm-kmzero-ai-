@@ -15,8 +15,7 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
@@ -24,21 +23,17 @@ Deno.serve(async (req: Request) => {
       global: { headers: { Authorization: authHeader } },
     })
 
-    const {
-      data: { user },
-    } = await userClient.auth.getUser()
+    const { data: { user } } = await userClient.auth.getUser()
     if (!user || user.app_metadata?.role !== 'admin-master') {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
     const { email, name, role } = await req.json()
     if (!email || !name) {
       return new Response(JSON.stringify({ error: 'Email and name are required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
@@ -48,13 +43,12 @@ Deno.serve(async (req: Request) => {
 
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
       email,
-      { redirectTo: `${new URL(req.url).origin}/login`, data: { name } },
+      { redirectTo: `${new URL(req.url).origin}/login`, data: { name } }
     )
 
     if (inviteError) {
       return new Response(JSON.stringify({ error: inviteError.message }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
@@ -62,24 +56,20 @@ Deno.serve(async (req: Request) => {
       app_metadata: { role: role || 'broker' },
     })
 
-    await adminClient.from('profiles').upsert(
-      {
-        id: inviteData.user.id,
-        email,
-        name,
-        role: role || 'broker',
-        status: 'invited',
-      },
-      { onConflict: 'id' },
-    )
+    await adminClient.from('profiles').upsert({
+      id: inviteData.user.id,
+      email,
+      name,
+      role: role || 'broker',
+      status: 'invited',
+    }, { onConflict: 'id' })
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch {
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })

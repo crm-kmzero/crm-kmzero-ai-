@@ -18,12 +18,7 @@ function simulatedResponse(message: string): string {
   if (msg.includes('preç') || msg.includes('cot') || msg.includes('valor')) {
     return 'Ótimo! Vou preparar uma cotação especial para você. Um momento, por favor.'
   }
-  if (
-    msg.includes('olá') ||
-    msg.includes('oi') ||
-    msg.includes('bom dia') ||
-    msg.includes('boa tarde')
-  ) {
+  if (msg.includes('olá') || msg.includes('oi') || msg.includes('bom dia') || msg.includes('boa tarde')) {
     return 'Olá! Sou a Ana, assistente virtual da Km Zero Corretora. Como posso ajudar você hoje?'
   }
   return 'Entendi! Estou aqui para ajudar. Pode me dar mais detalhes sobre o que você procura?'
@@ -35,19 +30,11 @@ async function generateAIResponse(customerMessage: string): Promise<string> {
     const prompt = `Você é a Ana, assistente virtual da Km Zero Corretora de Seguros e Consórcios. Responda de forma curta, amigável e direta à mensagem do cliente: "${customerMessage}"`
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-      },
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
     )
     const data = await res.json()
-    return (
-      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || simulatedResponse(customerMessage)
-    )
-  } catch {
-    return simulatedResponse(customerMessage)
-  }
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || simulatedResponse(customerMessage)
+  } catch { return simulatedResponse(customerMessage) }
 }
 
 async function sendWhatsAppMessage(to: string, text: string) {
@@ -55,17 +42,10 @@ async function sendWhatsAppMessage(to: string, text: string) {
   try {
     await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to,
-        type: 'text',
-        text: { body: text },
-      }),
+      headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body: text } }),
     })
-  } catch {
-    /* silently fail */
-  }
+  } catch { /* silently fail */ }
 }
 
 Deno.serve(async (req: Request) => {
@@ -77,10 +57,7 @@ Deno.serve(async (req: Request) => {
     const token = url.searchParams.get('hub.verify_token')
     const challenge = url.searchParams.get('hub.challenge')
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      return new Response(challenge ?? '', {
-        status: 200,
-        headers: { 'Content-Type': 'text/plain' },
-      })
+      return new Response(challenge ?? '', { status: 200, headers: { 'Content-Type': 'text/plain' } })
     }
     return new Response('Forbidden', { status: 403 })
   }
@@ -105,39 +82,24 @@ Deno.serve(async (req: Request) => {
     })
 
     const { data: leads } = await supabase.from('leads').select('id, telefone')
-    let lead = leads?.find((l: { telefone: string }) =>
-      normalizePhone(l.telefone).endsWith(normalizedIncoming),
-    )
+    let lead = leads?.find((l: { telefone: string }) => normalizePhone(l.telefone).endsWith(normalizedIncoming))
 
     if (!lead) {
-      const { data: newLead } = await supabase
-        .from('leads')
-        .insert({
-          nome: contactName,
-          telefone: fromPhone,
-          estagio: 'novo',
-          origem: 'whatsapp',
-          prioridade: 2,
-        })
-        .select()
-        .single()
+      const { data: newLead } = await supabase.from('leads').insert({
+        nome: contactName, telefone: fromPhone, estagio: 'novo', origem: 'whatsapp', prioridade: 2,
+      }).select().single()
       lead = newLead
     }
 
     const aiResponse = await generateAIResponse(messageText)
 
     await supabase.from('interacoes_sdr').insert({
-      lead_id: lead.id,
-      mensagem_cliente: messageText,
-      mensagem_ia: aiResponse,
+      lead_id: lead.id, mensagem_cliente: messageText, mensagem_ia: aiResponse,
       intencao_detectada: messageText.toLowerCase().includes('preç') ? 'cotacao' : 'duvida',
       sentimento: 'neutro',
     })
 
-    await supabase
-      .from('leads')
-      .update({ ultimo_contato: new Date().toISOString() })
-      .eq('id', lead.id)
+    await supabase.from('leads').update({ ultimo_contato: new Date().toISOString() }).eq('id', lead.id)
     await sendWhatsAppMessage(fromPhone, aiResponse)
 
     return new Response(JSON.stringify({ success: true }), {
@@ -145,8 +107,7 @@ Deno.serve(async (req: Request) => {
     })
   } catch (err) {
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })
