@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase/client'
 interface AuthContextType {
   user: User | null
   session: Session | null
+  role: string | null
+  isAdminMaster: boolean
   signUp: (email: string, password: string) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signInWithOtp: (email: string) => Promise<{ error: any }>
@@ -24,6 +26,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const role = user?.app_metadata?.role ?? null
+  const isAdminMaster = role === 'admin-master'
 
   useEffect(() => {
     const {
@@ -70,7 +75,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, signUp, signIn, signInWithOtp, signOut, loading }}
+      value={{
+        user,
+        session,
+        role,
+        isAdminMaster,
+        signUp,
+        signIn,
+        signInWithOtp,
+        signOut,
+        loading,
+      }}
     >
       {children}
     </AuthContext.Provider>

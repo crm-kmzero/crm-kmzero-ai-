@@ -50,6 +50,14 @@ export function AppHeader() {
           <Bell className="h-5 w-5" />
           <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full" />
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSignOut}
+          className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 font-medium"
+        >
+          <LogOut className="mr-1.5 h-4 w-4" /> Sair
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 h-9 px-2 hover:bg-slate-50">

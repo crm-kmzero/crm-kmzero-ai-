@@ -12,6 +12,7 @@ import Leads from './pages/Leads'
 import LeadDetail from './pages/LeadDetail'
 import Sellers from './pages/Sellers'
 import Settings from './pages/Settings'
+import Team from './pages/Team'
 
 const App = () => (
   <BrowserRouter>
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/leads/:id" element={<LeadDetail />} />
             <Route path="/sellers" element={<Sellers />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/team" element={<Team />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
