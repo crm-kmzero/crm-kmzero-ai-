@@ -52,9 +52,9 @@ Deno.serve(async (req: Request) => {
     const originUrl = new URL(req.url).origin
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
       email,
-      { 
-        redirectTo: `${originUrl}/login`, 
-        data: { name } 
+      {
+        redirectTo: `${originUrl}/login`,
+        data: { name },
       },
     )
 
@@ -83,7 +83,6 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
-
   } catch (err) {
     console.error('[invite-member] Error:', err)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {

@@ -8,20 +8,21 @@ const PHONE_NUMBER_ID = Deno.env.get('META_WHATSAPP_PHONE_NUMBER_ID') ?? ''
 const APP_SECRET = Deno.env.get('META_APP_SECRETS') ?? ''
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ''
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
-const SERVICE_ROLE_KEY = Deno.env.get('SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+const SERVICE_ROLE_KEY =
+  Deno.env.get('SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
 // Configuração das regras de distribuição de vendas por e-mail
 const REGRA_DISTRIBUICAO = {
   GABRIEL: {
     email: 'gabrielaraujo@kmzero.com.br',
     telefone: '5534992000300',
-    link: 'https://wa.me/5534992000300'
+    link: 'https://wa.me/5534992000300',
   },
   ADRIANA: {
     email: 'adriana.araujo@kmzero.com.br',
     telefone: '5534984080220',
-    link: 'https://wa.me/5534984080220'
-  }
+    link: 'https://wa.me/5534984080220',
+  },
 }
 
 function normalizePhone(phone: string): string {
@@ -30,32 +31,57 @@ function normalizePhone(phone: string): string {
 
 // Helper para determinar as informações de contato do corretor
 function obterContatoCorretor(produto: string) {
-  const prod = (produto ?? '').toLowerCase().trim();
+  const prod = (produto ?? '').toLowerCase().trim()
   if (prod === 'auto' || prod === 'automóvel' || prod === 'automovel' || prod === 'seguro auto') {
-    return REGRA_DISTRIBUICAO.GABRIEL;
+    return REGRA_DISTRIBUICAO.GABRIEL
   }
-  return REGRA_DISTRIBUICAO.ADRIANA;
+  return REGRA_DISTRIBUICAO.ADRIANA
 }
 
 // Analisador inteligente de produto com base no texto enviado pelo cliente
 function analisarProdutoPorMensagem(texto: string, produtoAtual: string): string {
-  const txt = (texto ?? '').toLowerCase();
-  if (txt.includes('carro') || txt.includes('auto') || txt.includes('veiculo') || txt.includes('veículo') || txt.includes('moto') || txt.includes('placa') || txt.includes('cotação de seguro auto')) {
-    return 'Auto';
+  const txt = (texto ?? '').toLowerCase()
+  if (
+    txt.includes('carro') ||
+    txt.includes('auto') ||
+    txt.includes('veiculo') ||
+    txt.includes('veículo') ||
+    txt.includes('moto') ||
+    txt.includes('placa') ||
+    txt.includes('cotação de seguro auto')
+  ) {
+    return 'Auto'
   }
-  if (txt.includes('consórcio') || txt.includes('consorcio') || txt.includes('carta de crédito') || txt.includes('imóvel') || txt.includes('casa') || txt.includes('apartamento')) {
-    return 'Consórcio';
+  if (
+    txt.includes('consórcio') ||
+    txt.includes('consorcio') ||
+    txt.includes('carta de crédito') ||
+    txt.includes('imóvel') ||
+    txt.includes('casa') ||
+    txt.includes('apartamento')
+  ) {
+    return 'Consórcio'
   }
-  if (txt.includes('vida') || txt.includes('saúde') || txt.includes('odonto') || txt.includes('morte')) {
-    return 'Vida';
+  if (
+    txt.includes('vida') ||
+    txt.includes('saúde') ||
+    txt.includes('odonto') ||
+    txt.includes('morte')
+  ) {
+    return 'Vida'
   }
   if (txt.includes('empresa') || txt.includes('empresarial') || txt.includes('cnpj')) {
-    return 'Empresarial';
+    return 'Empresarial'
   }
-  if (txt.includes('residência') || txt.includes('residencial') || txt.includes('lar') || txt.includes('seguro residencial')) {
-    return 'Residencial';
+  if (
+    txt.includes('residência') ||
+    txt.includes('residencial') ||
+    txt.includes('lar') ||
+    txt.includes('seguro residencial')
+  ) {
+    return 'Residencial'
   }
-  return produtoAtual || 'Outro';
+  return produtoAtual || 'Outro'
 }
 
 function simulatedResponse(message: string): string {
@@ -76,7 +102,7 @@ function simulatedResponse(message: string): string {
 
 // Gera o vetor (embedding) para a mensagem do cliente usando o Gemini
 async function getEmbedding(text: string): Promise<number[] | null> {
-  if (!GEMINI_API_KEY) return null;
+  if (!GEMINI_API_KEY) return null
   try {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${GEMINI_API_KEY}`,
@@ -84,61 +110,60 @@ async function getEmbedding(text: string): Promise<number[] | null> {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: "models/text-embedding-004",
-          content: { parts: [{ text }] }
-        })
-      }
-    );
-    const data = await res.json();
-    return data?.embedding?.values || null;
+          model: 'models/text-embedding-004',
+          content: { parts: [{ text }] },
+        }),
+      },
+    )
+    const data = await res.json()
+    return data?.embedding?.values || null
   } catch (err) {
-    console.error("[embedding] Erro ao gerar vetor:", err);
-    return null;
+    console.error('[embedding] Erro ao gerar vetor:', err)
+    return null
   }
 }
 
 // Realiza a busca semântica na sua tabela do Supabase
 async function buscarContextoBaseConhecimento(supabase: any, userMessage: string): Promise<string> {
-  const queryVector = await getEmbedding(userMessage);
-  if (!queryVector) return "";
+  const queryVector = await getEmbedding(userMessage)
+  if (!queryVector) return ''
 
   const { data, error } = await supabase.rpc('buscar_documentos', {
     query_embedding: queryVector,
     match_threshold: 0.6, // Retorna apenas se tiver mais de 60% de semelhança
-    match_count: 2        // Limita aos 2 trechos de texto mais relevantes
-  });
+    match_count: 2, // Limita aos 2 trechos de texto mais relevantes
+  })
 
   if (error) {
-    console.error("[rag] Erro na busca semântica:", JSON.stringify(error));
-    return "";
+    console.error('[rag] Erro na busca semântica:', JSON.stringify(error))
+    return ''
   }
 
-  if (!data || data.length === 0) return "";
+  if (!data || data.length === 0) return ''
 
-  return data
-    .map((doc: any) => `[PRODUTO: ${doc.produto}]\n${doc.conteudo}`)
-    .join('\n\n');
+  return data.map((doc: any) => `[PRODUTO: ${doc.produto}]\n${doc.conteudo}`).join('\n\n')
 }
 
 // Função agora aceita o histórico de mensagens e o contexto seguro para contextualizar a IA [2]
 async function generateAIResponse(
-  customerMessage: string, 
+  customerMessage: string,
   history: { mensagem_cliente: string; mensagem_ia: string }[],
-  contextoSeguro: string
+  contextoSeguro: string,
 ): Promise<string> {
   if (!GEMINI_API_KEY) return simulatedResponse(customerMessage)
   try {
     // Monta o prompt cronológico de histórico para dar memória à Ana
-    let historyPrompt = "";
+    let historyPrompt = ''
     if (history && history.length > 0) {
-      const chronologicalHistory = [...history].reverse();
-      historyPrompt = chronologicalHistory.map(h => 
-        `Cliente: ${h.mensagem_cliente}\nAna: ${h.mensagem_ia}`
-      ).join('\n') + '\n';
+      const chronologicalHistory = [...history].reverse()
+      historyPrompt =
+        chronologicalHistory
+          .map((h) => `Cliente: ${h.mensagem_cliente}\nAna: ${h.mensagem_ia}`)
+          .join('\n') + '\n'
     }
 
     const prompt = `${historyPrompt}Cliente: ${customerMessage}\nAna:`
-    
+
     // Instruções rígidas para a IA gerenciar o momento do Handoff através da tag reservada [2]
     const systemInstruction = `Você é a Ana, assistente virtual inteligente da Km Zero Corretora de Seguros e Consórcios.
 Seu objetivo é qualificar leads de forma altamente ágil, amigável e focada.
@@ -147,7 +172,7 @@ BASE DE CONHECIMENTO TÉCNICA E REGRAS:
 Use estritamente as informações abaixo para tirar dúvidas específicas do cliente sobre taxas, seguros e prazos. Se a informação necessária não estiver descrita abaixo, diga de forma simpática que não possui esse detalhe técnico e que passará para o corretor especialista responder, adicionando a tag [CHAMAR_CORRETOR] no fim do texto.
 
 CONTEÚDO DA BASE DE CONHECIMENTO:
-${contextoSeguro || "Nenhum documento técnico disponível para esta pergunta específica."}
+${contextoSeguro || 'Nenhum documento técnico disponível para esta pergunta específica.'}
 
 REGRAS CRÍTICAS DE CONVERSAÇÃO E MEMÓRIA:
 1. Leia com extrema atenção o histórico da conversa para dar continuidade natural. NUNCA pergunte o que o cliente quer se ele já explicou anteriormente na conversa.
@@ -165,9 +190,9 @@ REGRAS CRÍTICAS DE CONVERSAÇÃO E MEMÓRIA:
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          systemInstruction: { parts: [{ text: systemInstruction }] }
+          systemInstruction: { parts: [{ text: systemInstruction }] },
         }),
       },
     )
@@ -217,10 +242,7 @@ function verifySignature(payload: string, signature: string | null): boolean {
   }
 }
 
-async function safeIncrementMetric(
-  supabase: any,
-  column: 'leads_novos' | 'leads_contatados',
-) {
+async function safeIncrementMetric(supabase: any, column: 'leads_novos' | 'leads_contatados') {
   const today = new Date().toISOString().split('T')[0]
   try {
     const { error: rpcError } = await supabase.rpc('increment_metric', {
@@ -230,7 +252,9 @@ async function safeIncrementMetric(
 
     if (!rpcError) return
 
-    console.warn(`[whatsapp-webhook] RPC 'increment_metric' falhou, executando fallback: ${rpcError.message}`)
+    console.warn(
+      `[whatsapp-webhook] RPC 'increment_metric' falhou, executando fallback: ${rpcError.message}`,
+    )
 
     const { data: metricRow, error: selectError } = await supabase
       .from('metricas_diarias')
@@ -239,7 +263,10 @@ async function safeIncrementMetric(
       .maybeSingle()
 
     if (selectError) {
-      console.error('[whatsapp-webhook] Erro no select de fallback de métricas:', JSON.stringify(selectError))
+      console.error(
+        '[whatsapp-webhook] Erro no select de fallback de métricas:',
+        JSON.stringify(selectError),
+      )
       return
     }
 
@@ -314,7 +341,10 @@ Deno.serve(async (req: Request) => {
       .ilike('telefone', `%${normalizePhone(waId).slice(-8)}%`)
 
     if (selectLeadError) {
-      console.error('[whatsapp-webhook] Erro ao buscar lead existente:', JSON.stringify(selectLeadError))
+      console.error(
+        '[whatsapp-webhook] Erro ao buscar lead existente:',
+        JSON.stringify(selectLeadError),
+      )
     }
 
     let lead = matchedLeads?.find((l: { telefone: string }) =>
@@ -336,9 +366,12 @@ Deno.serve(async (req: Request) => {
         })
         .select()
         .single()
-      
+
       if (insertLeadError) {
-        console.error('[whatsapp-webhook] Erro ao cadastrar novo lead:', JSON.stringify(insertLeadError))
+        console.error(
+          '[whatsapp-webhook] Erro ao cadastrar novo lead:',
+          JSON.stringify(insertLeadError),
+        )
       }
       lead = newLead
       isNewLead = true
@@ -358,13 +391,17 @@ Deno.serve(async (req: Request) => {
       .limit(6)
 
     // Ajuste de mapeamento histórico
-    const mappedHistory = chatHistory?.map((h: any) => ({
-      mensagem_cliente: h.mensagem_cliente,
-      mensagem_ia: h.message || h.mensagem_ia || ''
-    })) || []
+    const mappedHistory =
+      chatHistory?.map((h: any) => ({
+        mensagem_cliente: h.mensagem_cliente,
+        mensagem_ia: h.message || h.mensagem_ia || '',
+      })) || []
 
     if (historyError) {
-      console.error('[whatsapp-webhook] Erro ao buscar histórico de interações:', JSON.stringify(historyError))
+      console.error(
+        '[whatsapp-webhook] Erro ao buscar histórico de interações:',
+        JSON.stringify(historyError),
+      )
     }
 
     // Classificação de produto dinâmica por palavras-chave [2]
@@ -379,7 +416,7 @@ Deno.serve(async (req: Request) => {
         .select('id')
         .eq('email', contatoCorretor.email)
         .maybeSingle()
-      
+
       if (profileData) {
         vendedorId = profileData.id
       }
@@ -406,8 +443,11 @@ Deno.serve(async (req: Request) => {
       estagioAtualizado = 'qualificado'
       prioridadeAtualizada = 1
 
-      const primeiroNomeCorretor = contatoCorretor.email === 'gabrielaraujo@kmzero.com.br' ? 'Gabriel' : 'Adriana'
-      const textoIntro = encodeURIComponent(`Olá, ${primeiroNomeCorretor}! Fui atendido pela Ana no sistema e gostaria de receber minha simulação de ${inputProduct}.`)
+      const primeiroNomeCorretor =
+        contatoCorretor.email === 'gabrielaraujo@kmzero.com.br' ? 'Gabriel' : 'Adriana'
+      const textoIntro = encodeURIComponent(
+        `Olá, ${primeiroNomeCorretor}! Fui atendido pela Ana no sistema e gostaria de receber minha simulação de ${inputProduct}.`,
+      )
       const linkWhatsApp = `${contatoCorretor.link}?text=${textoIntro}`
 
       finalResponse += `\n\nO especialista que cuidará do seu atendimento é o *${primeiroNomeCorretor} Araújo*. Você pode falar diretamente com ele agora mesmo clicando no link abaixo:\n👉 ${linkWhatsApp}`
@@ -429,19 +469,22 @@ Deno.serve(async (req: Request) => {
     })
 
     if (insertInteractionError) {
-      console.error('[whatsapp-webhook] Erro ao inserir interação sdr:', JSON.stringify(insertInteractionError))
+      console.error(
+        '[whatsapp-webhook] Erro ao inserir interação sdr:',
+        JSON.stringify(insertInteractionError),
+      )
     }
 
     // Atualização cadastral do Lead com o produto, estágio, corretor e próxima ação corretos [2]
     await supabase
       .from('leads')
-      .update({ 
+      .update({
         produto_interesse: inputProduct,
         vendedor_id: vendedorId,
         estagio: estagioAtualizado,
         prioridade: prioridadeAtualizada,
         proxima_acao: proximaAcaoAtualizada,
-        ultimo_contato: new Date().toISOString() 
+        ultimo_contato: new Date().toISOString(),
       })
       .eq('id', lead.id)
 
@@ -454,7 +497,6 @@ Deno.serve(async (req: Request) => {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
-
   } catch (err) {
     console.error('[whatsapp-webhook] Unexpected error:', err)
     return new Response('OK', { status: 200, headers: corsHeaders })
