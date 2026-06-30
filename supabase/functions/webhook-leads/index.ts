@@ -20,10 +20,87 @@ function getCorsHeaders(reqOrigin: string): Record<string, string> {
 
 const WEBHOOK_API_KEY = Deno.env.get('WEBHOOK_API_KEY') ?? ''
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
-const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+const SERVICE_ROLE_KEY = Deno.env.get('SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+
+// Configuração das regras de distribuição de vendas por e-mail institucional
+const REGRA_DISTRIBUICAO = {
+  GABRIEL: { email: 'gabrielaraujo@kmzero.com.br' },
+  ADRIANA: { email: 'adriana.araujo@kmzero.com.br' }
+}
 
 function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, '')
+}
+
+// Determina qual corretor assume o lead com base no produto de interesse
+function obterContatoCorretor(produto: string) {
+  const prod = (produto ?? '').toLowerCase().trim();
+  if (prod === 'auto' || prod === 'automóvel' || prod === 'automovel' || prod === 'seguro auto') {
+    return REGRA_DISTRIBUICAO.GABRIEL;
+  }
+  return REGRA_DISTRIBUICAO.ADRIANA;
+}
+
+// Helper para gerar o vetor (embedding) usando o Gemini
+async function getEmbedding(text: string): Promise<number[] | null> {
+  const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ''
+  if (!GEMINI_API_KEY) return null
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: "models/text-embedding-004",
+          content: { parts: [{ text }] }
+        })
+      }
+    )
+    const data = await res.json()
+    return data?.embedding?.values || null
+  } catch (err) {
+    console.error('[embedding] Erro ao gerar vetor:', err)
+    return null
+  }
+}
+
+// Incrementador atômico de métricas (RPC com fallback robusto)
+async function safeIncrementMetric(supabase: any, today: string, column: 'leads_novos' | 'leads_contatados') {
+  try {
+    const { error: rpcError } = await supabase.rpc('increment_metric', {
+      metric_date: today,
+      metric_column: column,
+    })
+
+    if (!rpcError) return
+
+    console.warn(`[webhook-leads] RPC 'increment_metric' indisponível, executando fallback estruturado: ${rpcError.message}`)
+
+    const { data: metricRow, error: selectError } = await supabase
+      .from('metricas_diarias')
+      .select(`id, ${column}`)
+      .eq('data', today)
+      .maybeSingle()
+
+    if (selectError) {
+      console.error('[webhook-leads] Erro no select de fallback de métricas:', JSON.stringify(selectError))
+      return
+    }
+
+    if (metricRow) {
+      await supabase
+        .from('metricas_diarias')
+        .update({ [column]: (metricRow[column] ?? 0) + 1 })
+        .eq('id', metricRow.id)
+    } else {
+      await supabase
+        .from('metricas_diarias')
+        .insert({ data: today, [column]: 1 })
+    }
+  } catch (err) {
+    console.error('[webhook-leads] Erro crítico no incremento de métricas:', err)
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -58,6 +135,58 @@ Deno.serve(async (req: Request) => {
     })
   }
 
+  // NOVA LÓGICA: Ingestão de dados na base de conhecimento [2]
+  const { tipo_requisicao, produto, conteudo } = body as {
+    tipo_requisicao?: string
+    produto?: string
+    conteudo?: string
+  }
+
+  if (tipo_requisicao === 'adicionar_conhecimento') {
+    if (!produto || !conteudo) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: produto, conteudo' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      )
+    }
+
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+
+    // 1. Gera o vetor (embedding) para o texto técnico [2]
+    const embedding = await getEmbedding(conteudo)
+    if (!embedding) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to generate embedding vector' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      )
+    }
+
+    // 2. Insere na tabela do banco [2]
+    const { error: insertError } = await supabase
+      .from('base_conhecimento')
+      .insert({
+        produto,
+        conteudo,
+        embedding
+      })
+
+    if (insertError) {
+      console.error('[webhook-leads] Error inserting knowledge:', JSON.stringify(insertError))
+      return new Response(
+        JSON.stringify({ error: 'Failed to save knowledge to database' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      )
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, message: 'Conhecimento salvo com sucesso na base de dados!' }),
+      { status: 201, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+    )
+  }
+
+  // FLUXO NORMAL: Recebimento e processamento de leads do site [2]
   const { nome, telefone, produto_interesse, origem, email } = body as {
     nome?: string
     telefone?: string
@@ -81,10 +210,15 @@ Deno.serve(async (req: Request) => {
 
   try {
     const normalizedPhone = normalizePhone(telefone)
-    const { data: existingLeads } = await supabase
+    
+    const { data: existingLeads, error: selectLeadError } = await supabase
       .from('leads')
       .select('id, telefone')
       .ilike('telefone', `%${normalizedPhone.slice(-8)}%`)
+
+    if (selectLeadError) {
+      console.error('[webhook-leads] Erro ao buscar leads existentes:', JSON.stringify(selectLeadError))
+    }
 
     const existingLead = existingLeads?.find((l: { telefone: string }) =>
       normalizePhone(l.telefone).endsWith(normalizedPhone.slice(-11)),
@@ -98,27 +232,20 @@ Deno.serve(async (req: Request) => {
         .update({ ultimo_contato: new Date().toISOString() })
         .eq('id', existingLead.id)
 
-      await supabase
-        .rpc('increment_metric', {
-          metric_date: today,
-          metric_column: 'leads_contatados',
-        })
-        .catch(() => {
-          // Fallback: manual upsert if RPC doesn't exist
-          supabase.from('metricas_diarias').upsert(
-            {
-              data: today,
-              leads_contatados: 1,
-            },
-            { onConflict: 'data' },
-          )
-        })
+      await safeIncrementMetric(supabase, today, 'leads_contatados')
 
       return new Response(
         JSON.stringify({ success: true, message: 'Lead updated', lead_id: existingLead.id }),
         { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
       )
     }
+
+    const contatoCorretor = obterContatoCorretor(produto_interesse)
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', contatoCorretor.email)
+      .maybeSingle()
 
     const { data: newLead, error: insertError } = await supabase
       .from('leads')
@@ -130,6 +257,7 @@ Deno.serve(async (req: Request) => {
         origem,
         estagio: 'novo',
         prioridade: 1,
+        vendedor_id: profileData?.id || null,
         score_sdr: 0,
       })
       .select()
@@ -143,27 +271,15 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    const { data: metricRow } = await supabase
-      .from('metricas_diarias')
-      .select('leads_novos')
-      .eq('data', today)
-      .single()
-
-    if (metricRow) {
-      await supabase
-        .from('metricas_diarias')
-        .update({ leads_novos: (metricRow.leads_novos ?? 0) + 1 })
-        .eq('data', today)
-    } else {
-      await supabase.from('metricas_diarias').insert({ data: today, leads_novos: 1 })
-    }
+    await safeIncrementMetric(supabase, today, 'leads_novos')
 
     return new Response(
       JSON.stringify({ success: true, message: 'Lead created', lead_id: newLead.id }),
       { status: 201, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
     )
+
   } catch (err) {
-    console.error('[webhook-leads] Unexpected error:', JSON.stringify(err))
+    console.error('[webhook-leads] Unexpected error:', err)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },

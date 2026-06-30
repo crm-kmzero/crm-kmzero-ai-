@@ -27,7 +27,10 @@ Deno.serve(async (req: Request) => {
     const {
       data: { user },
     } = await userClient.auth.getUser()
-    if (!user || user.app_metadata?.role !== 'admin-master') {
+
+    // Permite que perfis admin-master ou admin possam convidar novos membros
+    const userRole = user?.app_metadata?.role
+    if (!user || (userRole !== 'admin-master' && userRole !== 'admin')) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -46,9 +49,13 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
+    const originUrl = new URL(req.url).origin
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
       email,
-      { redirectTo: `${new URL(req.url).origin}/login`, data: { name } },
+      { 
+        redirectTo: `${originUrl}/login`, 
+        data: { name } 
+      },
     )
 
     if (inviteError) {
@@ -76,7 +83,9 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
-  } catch {
+
+  } catch (err) {
+    console.error('[invite-member] Error:', err)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
