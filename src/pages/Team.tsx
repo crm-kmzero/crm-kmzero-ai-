@@ -4,10 +4,23 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useAuth } from '@/hooks/use-auth'
 import { fetchProfiles, inviteMember, deleteProfile, Profile } from '@/services/team'
 import { toast } from '@/hooks/use-toast'
@@ -28,7 +41,9 @@ export default function Team() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   if (!isAdminMaster) {
     return (
@@ -47,7 +62,9 @@ export default function Team() {
       toast({ title: 'Erro ao convidar', description: error.message, variant: 'destructive' })
     } else {
       toast({ title: 'Convite enviado!', description: `${name} foi convidado para a equipe.` })
-      setEmail(''); setName(''); setRole('broker')
+      setEmail('')
+      setName('')
+      setRole('broker')
       setDialogOpen(false)
       load()
     }
@@ -63,7 +80,13 @@ export default function Team() {
     }
   }
 
-  const getInitials = (n: string) => n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+  const getInitials = (n: string) =>
+    n
+      .split(' ')
+      .map((w) => w[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase()
 
   return (
     <div className="space-y-6">
@@ -74,23 +97,38 @@ export default function Team() {
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="shadow-sm"><UserPlus className="mr-2 h-4 w-4" /> Convidar Membro</Button>
+            <Button className="shadow-sm">
+              <UserPlus className="mr-2 h-4 w-4" /> Convidar Membro
+            </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader><DialogTitle>Convidar Novo Membro</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>Convidar Novo Membro</DialogTitle>
+            </DialogHeader>
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label>Nome Completo</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="João da Silva" />
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="João da Silva"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Email Corporativo</Label>
-                <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="joao@kmzero.com.br" />
+                <Input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  type="email"
+                  placeholder="joao@kmzero.com.br"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Função</Label>
                 <Select value={role} onValueChange={setRole}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="broker">Corretor</SelectItem>
                     <SelectItem value="admin-master">Administrador Master</SelectItem>
@@ -98,8 +136,18 @@ export default function Team() {
                 </Select>
               </div>
               <DialogFooter>
-                <Button onClick={handleInvite} disabled={inviting || !email || !name} className="w-full">
-                  {inviting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...</> : 'Enviar Convite'}
+                <Button
+                  onClick={handleInvite}
+                  disabled={inviting || !email || !name}
+                  className="w-full"
+                >
+                  {inviting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...
+                    </>
+                  ) : (
+                    'Enviar Convite'
+                  )}
                 </Button>
               </DialogFooter>
             </div>
@@ -110,7 +158,9 @@ export default function Team() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           [...Array(3)].map((_, i) => (
-            <Card key={i} className="border-slate-200"><CardContent className="h-32 animate-pulse bg-slate-100 rounded-lg" /></CardContent>
+            <Card key={i} className="border-slate-200">
+              <CardContent className="h-32 animate-pulse bg-slate-100 rounded-lg" />
+            </Card>
           ))
         ) : profiles.length === 0 ? (
           <Card className="col-span-full border-dashed border-slate-300">
@@ -125,7 +175,9 @@ export default function Team() {
               <CardHeader className="flex flex-row items-start justify-between pb-2">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12 border-2 border-primary/10">
-                    <AvatarFallback className="bg-primary/5 text-primary font-bold">{getInitials(p.name)}</AvatarFallback>
+                    <AvatarFallback className="bg-primary/5 text-primary font-bold">
+                      {getInitials(p.name)}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
                     <CardTitle className="text-lg">{p.name}</CardTitle>
@@ -134,15 +186,34 @@ export default function Team() {
                     </p>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(p.id)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-slate-400 hover:text-red-600 hover:bg-red-50"
+                  onClick={() => handleDelete(p.id)}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </CardHeader>
               <CardContent className="pt-2 flex items-center gap-2">
-                <Badge variant="outline" className={p.role === 'admin-master' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
+                <Badge
+                  variant="outline"
+                  className={
+                    p.role === 'admin-master'
+                      ? 'bg-purple-50 text-purple-700 border-purple-200'
+                      : 'bg-blue-50 text-blue-700 border-blue-200'
+                  }
+                >
                   {p.role === 'admin-master' ? 'Admin Master' : 'Corretor'}
                 </Badge>
-                <Badge variant="outline" className={p.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}>
+                <Badge
+                  variant="outline"
+                  className={
+                    p.status === 'active'
+                      ? 'bg-green-50 text-green-700 border-green-200'
+                      : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                  }
+                >
                   {p.status === 'active' ? 'Ativo' : 'Convidado'}
                 </Badge>
               </CardContent>
