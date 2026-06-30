@@ -1,6 +1,7 @@
 {
   "_versions": {
-    "whatsapp-webhook": 2,
-    "invite-member": 2
+    "whatsapp-webhook": 3,
+    "invite-member": 3,
+    "webhook-leads": 1
   }
 }

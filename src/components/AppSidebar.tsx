@@ -45,7 +45,7 @@ export function AppSidebar() {
           className="flex items-center gap-2 text-primary font-bold text-xl hover:opacity-90 transition-opacity"
         >
           <ShieldCheck className="h-6 w-6" />
-          <span>Km Zero</span>
+          <span>KMZERO.AI</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>

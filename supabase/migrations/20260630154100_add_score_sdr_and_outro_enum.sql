@@ -1,0 +1,3 @@
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS score_sdr INTEGER DEFAULT 0;
+
+ALTER TYPE produto_interesse_type ADD VALUE IF NOT EXISTS 'Outro';

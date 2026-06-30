@@ -1,4 +1,11 @@
-export type ProdutoInteresse = 'Auto' | 'Residencial' | 'Vida' | 'Consorcio' | 'Empresarial'
+export type ProdutoInteresse =
+  | 'Auto'
+  | 'Residencial'
+  | 'Vida'
+  | 'Consorcio'
+  | 'Empresarial'
+  | 'Outro'
+  | 'Outro'
 export type Estagio = 'novo' | 'contato' | 'qualificado' | 'fechado' | 'perdido'
 export type Origem = 'whatsapp' | 'site' | 'indicacao' | 'formulario' | 'presencial'
 export type Sentimento = 'positivo' | 'neutro' | 'negativo'
@@ -13,11 +20,13 @@ export interface Lead {
   prioridade: number
   origem: Origem
   valor_estimado: number | null
+  score_sdr: number
   vendedor_id: string | null
   ultimo_contato: string | null
   proxima_acao: string | null
   data_criacao: string
   data_atualizacao: string
+  score_sdr: number
 }
 
 export interface InteracaoSDR {
