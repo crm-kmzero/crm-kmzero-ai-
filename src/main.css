@@ -41,6 +41,8 @@
     --ring: 216 100% 50%;
 
     --radius: 0.5rem;
+    --sidebar-width: 220px;
+    --sidebar-width-mobile: 18rem;
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222.2 84% 4.9%;

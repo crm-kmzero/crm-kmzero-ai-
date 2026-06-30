@@ -23,3 +23,13 @@ export async function updateLeadStage(id: string, estagio: Estagio) {
     .single()
   return { data: data as Lead | null, error }
 }
+
+export async function updateLead(id: string, updates: Partial<Lead>) {
+  const { data, error } = await supabase
+    .from('leads')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  return { data: data as Lead | null, error }
+}

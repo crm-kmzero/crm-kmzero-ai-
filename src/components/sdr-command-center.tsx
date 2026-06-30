@@ -71,6 +71,12 @@ export function SdrCommandCenter() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            <div className="bg-slate-50 rounded-lg p-3 text-center">
+              <p className="text-sm font-medium text-slate-700">
+                Hoje: <span className="font-bold">{atendimentos}</span> atendimentos |{' '}
+                <span className="font-bold">{qualificados}</span> qualificados ({taxa}%)
+              </p>
+            </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">Atendimentos</span>
               <span className="font-bold text-slate-900">{atendimentos}</span>

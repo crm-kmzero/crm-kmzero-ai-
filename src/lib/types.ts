@@ -1,4 +1,4 @@
-export type ProdutoInteresse = 'Auto' | 'Residencial' | 'Vida' | 'Consórcio' | 'Empresarial'
+export type ProdutoInteresse = 'Auto' | 'Residencial' | 'Vida' | 'Consorcio' | 'Empresarial'
 export type Estagio = 'novo' | 'contato' | 'qualificado' | 'fechado' | 'perdido'
 export type Origem = 'whatsapp' | 'site' | 'indicacao' | 'formulario' | 'presencial'
 export type Sentimento = 'positivo' | 'neutro' | 'negativo'

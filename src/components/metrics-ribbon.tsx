@@ -52,7 +52,7 @@ export function MetricsRibbon() {
     },
     {
       icon: TrendingUp,
-      label: 'Taxa de Conversão',
+      label: 'Taxa Conv.',
       value: `${Math.round(metrics?.taxa_conversao ?? 0)}%`,
       color: 'text-purple-600',
       bg: 'bg-purple-50',
@@ -62,7 +62,7 @@ export function MetricsRibbon() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card, i) => (
-        <Card key={i} className="border-slate-200">
+        <Card key={i} className="border-slate-200 rounded-xl shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${card.bg}`}>

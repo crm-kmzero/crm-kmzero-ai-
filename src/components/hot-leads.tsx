@@ -12,7 +12,9 @@ export function HotLeads({ leads }: HotLeadsProps) {
     .filter((l) => l.prioridade >= 2)
     .sort((a, b) => {
       if (b.prioridade !== a.prioridade) return b.prioridade - a.prioridade
-      return new Date(b.data_atualizacao).getTime() - new Date(a.data_atualizacao).getTime()
+      const dateA = new Date(a.ultimo_contato || a.data_criacao).getTime()
+      const dateB = new Date(b.ultimo_contato || b.data_criacao).getTime()
+      return dateB - dateA
     })
     .slice(0, 5)
 
@@ -46,8 +48,14 @@ export function HotLeads({ leads }: HotLeadsProps) {
                   </p>
                 </div>
               </div>
-              <Button size="sm" className="bg-[#25D366] hover:bg-[#1FB855] text-white border-0">
-                <Phone className="h-3 w-3 mr-1" /> Ligar
+              <Button
+                size="sm"
+                className="bg-[#25D366] hover:bg-[#1FB855] text-white border-0"
+                asChild
+              >
+                <a href={`tel:${lead.telefone.replace(/\D/g, '')}`}>
+                  <Phone className="h-3 w-3 mr-1" /> Ligar agora
+                </a>
               </Button>
             </div>
           ))
