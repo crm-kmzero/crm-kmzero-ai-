@@ -4,7 +4,7 @@ import { KanbanCard } from './kanban-card'
 import type { Lead, Estagio } from '@/lib/types'
 
 const STAGES: { id: Estagio; label: string; color: string }[] = [
-  { id: 'novo', label: 'NOVO', color: '#0066FF' },
+  { id: 'novo', label: 'NOVO', color: '#00D1B2' },
   { id: 'contato', label: 'CONTATO', color: '#F59E0B' },
   { id: 'qualificado', label: 'QUALIFICADO', color: '#F97316' },
   { id: 'fechado', label: 'FECHADO', color: '#10B981' },
@@ -13,9 +13,10 @@ const STAGES: { id: Estagio; label: string; color: string }[] = [
 interface KanbanBoardProps {
   leads: Lead[]
   onStageChange: (leadId: string, newStage: Estagio) => void
+  sellerMap?: Map<string, string>
 }
 
-export function KanbanBoard({ leads, onStageChange }: KanbanBoardProps) {
+export function KanbanBoard({ leads, onStageChange, sellerMap }: KanbanBoardProps) {
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const navigate = useNavigate()
 
@@ -46,12 +47,12 @@ export function KanbanBoard({ leads, onStageChange }: KanbanBoardProps) {
             key={stage.id}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, stage.id)}
-            className="min-w-[260px] flex-1 rounded-lg bg-slate-100/50 p-3"
+            className="min-w-[260px] flex-1 rounded-lg bg-[#151B2C]/50 p-3"
           >
             <div className="flex items-center gap-2 mb-3 px-1">
               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: stage.color }} />
-              <span className="text-sm font-bold text-slate-700">{stage.label}</span>
-              <span className="text-xs font-medium text-slate-400 bg-white px-2 py-0.5 rounded-full ml-auto">
+              <span className="text-sm font-bold text-slate-200">{stage.label}</span>
+              <span className="text-xs font-medium text-slate-500 bg-[#0B0F19] px-2 py-0.5 rounded-full ml-auto">
                 {stageLeads.length}
               </span>
             </div>
@@ -64,7 +65,10 @@ export function KanbanBoard({ leads, onStageChange }: KanbanBoardProps) {
                   onClick={() => navigate(`/leads/${lead.id}`)}
                   className={`cursor-pointer ${draggedId === lead.id ? 'opacity-40' : ''}`}
                 >
-                  <KanbanCard lead={lead} />
+                  <KanbanCard
+                    lead={lead}
+                    sellerName={lead.vendedor_id ? sellerMap?.get(lead.vendedor_id) : null}
+                  />
                 </div>
               ))}
             </div>
