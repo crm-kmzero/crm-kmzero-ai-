@@ -14,10 +14,7 @@ async function getEmbedding(text: string): Promise<number[] | null> {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'models/text-embedding-004',
-          content: { parts: [{ text }] },
-        }),
+        body: JSON.stringify({ model: 'models/text-embedding-004', content: { parts: [{ text }] } }),
       },
     )
     const data = await res.json()
@@ -37,15 +34,8 @@ Deno.serve(async (req: Request) => {
 
     if (body.tipo_requisicao === 'adicionar_conhecimento') {
       const {
-        id,
-        produto,
-        conteudo,
-        categoria,
-        titulo,
-        subtitulo,
-        imagem_url,
-        arquivo_url,
-        arquivo_nome,
+        id, produto, conteudo, categoria, titulo, subtitulo,
+        imagem_url, arquivo_url, arquivo_nome,
       } = body
 
       const embedText = `${titulo || produto || ''} ${subtitulo || ''} ${conteudo || ''}`
@@ -70,30 +60,26 @@ Deno.serve(async (req: Request) => {
 
       let result
       if (id) {
-        result = await supabase
-          .from('base_conhecimento')
-          .update(record)
-          .eq('id', id)
-          .select()
-          .single()
+        result = await supabase.from('base_conhecimento').update(record).eq('id', id).select().single()
       } else {
         result = await supabase.from('base_conhecimento').insert(record).select().single()
       }
 
-      return new Response(JSON.stringify({ data: result.data, error: result.error }), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
+      return new Response(
+        JSON.stringify({ data: result.data, error: result.error }),
+        { headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+      )
     }
 
-    return new Response(JSON.stringify({ error: 'Unknown request type' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    })
+    return new Response(
+      JSON.stringify({ error: 'Unknown request type' }),
+      { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+    )
   } catch (err) {
     console.error('[webhook-leads] Error:', err)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    })
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+    )
   }
 })
