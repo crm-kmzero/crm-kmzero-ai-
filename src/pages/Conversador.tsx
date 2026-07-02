@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { fetchLeads } from '@/services/leads'
 import { fetchInteractionsByLead } from '@/services/interactions'
@@ -15,8 +15,7 @@ export default function Conversador() {
   const [interactions, setInteractions] = useState<InteracaoSDR[]>([])
   const [notes, setNotes] = useState<NotaInterna[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'manual' | 'auto'>('auto')
-  const [search, setSearch] = useState('')
+  const selectedLeadRef = useRef<string | null>(null)
 
   const loadLeads = useCallback(async () => {
     const { data } = await fetchLeads()
@@ -34,6 +33,10 @@ export default function Conversador() {
   }, [])
 
   useEffect(() => {
+    selectedLeadRef.current = selectedLead?.id ?? null
+  }, [selectedLead])
+
+  useEffect(() => {
     loadLeads()
     const channel = supabase
       .channel('conversador-realtime')
@@ -42,11 +45,9 @@ export default function Conversador() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'interacoes_sdr' },
         (payload) => {
-          if (
-            selectedLead &&
-            (payload.new as Record<string, unknown>)?.lead_id === selectedLead.id
-          ) {
-            loadLeadDetails(selectedLead.id)
+          const leadId = selectedLeadRef.current
+          if (leadId && (payload.new as Record<string, unknown>)?.lead_id === leadId) {
+            loadLeadDetails(leadId)
           }
         },
       )
@@ -54,11 +55,9 @@ export default function Conversador() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'notas_internas' },
         (payload) => {
-          if (
-            selectedLead &&
-            (payload.new as Record<string, unknown>)?.lead_id === selectedLead.id
-          ) {
-            loadLeadDetails(selectedLead.id)
+          const leadId = selectedLeadRef.current
+          if (leadId && (payload.new as Record<string, unknown>)?.lead_id === leadId) {
+            loadLeadDetails(leadId)
           }
         },
       )
@@ -66,41 +65,42 @@ export default function Conversador() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [loadLeads, loadLeadDetails, selectedLead])
+  }, [loadLeads, loadLeadDetails])
 
   const handleSelectLead = (lead: Lead) => {
     setSelectedLead(lead)
     loadLeadDetails(lead.id)
   }
 
-  const filteredLeads = leads.filter((lead) => {
-    const matchesTab = activeTab === 'manual' ? lead.ia_ativa === false : lead.ia_ativa !== false
-    const matchesSearch =
-      !search ||
-      lead.nome.toLowerCase().includes(search.toLowerCase()) ||
-      lead.telefone.includes(search) ||
-      (lead.produto_interesse || '').toLowerCase().includes(search.toLowerCase())
-    return matchesTab && matchesSearch
-  })
+  const atendimentoLeads = leads.filter((l) => l.ia_ativa === false)
+  const iaLeads = leads.filter((l) => l.ia_ativa !== false)
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] gap-0 bg-[#0B0F19]">
+    <div className="flex h-[calc(100vh-7rem)] gap-0 bg-[#0B0F19] rounded-lg overflow-hidden">
       <InboxList
-        leads={filteredLeads}
+        title="Atendimento"
+        variant="atendimento"
+        leads={atendimentoLeads}
         selectedLeadId={selectedLead?.id || null}
         onSelectLead={handleSelectLead}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        search={search}
-        onSearchChange={setSearch}
         loading={loading}
       />
-      <ActiveChat lead={selectedLead} interactions={interactions} />
-      <LeadPanel
-        lead={selectedLead}
-        notes={notes}
-        onNotesChange={() => selectedLead && loadLeadDetails(selectedLead.id)}
+      <InboxList
+        title="KMZERO.IA"
+        variant="ia"
+        leads={iaLeads}
+        selectedLeadId={selectedLead?.id || null}
+        onSelectLead={handleSelectLead}
+        loading={loading}
       />
+      <div className="flex-1 flex min-w-0">
+        <ActiveChat lead={selectedLead} interactions={interactions} />
+        <LeadPanel
+          lead={selectedLead}
+          notes={notes}
+          onNotesChange={() => selectedLead && loadLeadDetails(selectedLead.id)}
+        />
+      </div>
     </div>
   )
 }

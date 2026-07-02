@@ -5,7 +5,6 @@ export type ProdutoInteresse =
   | 'Consorcio'
   | 'Empresarial'
   | 'Outro'
-  | 'Outro'
 export type Estagio = 'novo' | 'contato' | 'qualificado' | 'fechado' | 'perdido'
 export type Origem = 'whatsapp' | 'site' | 'indicacao' | 'formulario' | 'presencial'
 export type Sentimento = 'positivo' | 'neutro' | 'negativo'
@@ -26,7 +25,9 @@ export interface Lead {
   proxima_acao: string | null
   data_criacao: string
   data_atualizacao: string
-  score_sdr: number
+  canal_origem: string | null
+  ia_ativa: boolean | null
+  dados_cotacao: Record<string, unknown> | null
 }
 
 export interface InteracaoSDR {

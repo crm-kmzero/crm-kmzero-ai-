@@ -13,6 +13,8 @@ import LeadDetail from './pages/LeadDetail'
 import Sellers from './pages/Sellers'
 import Settings from './pages/Settings'
 import Team from './pages/Team'
+import Conversador from './pages/Conversador'
+import Produtos from './pages/Produtos'
 
 const App = () => (
   <BrowserRouter>
@@ -27,6 +29,8 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/leads" element={<Leads />} />
             <Route path="/leads/:id" element={<LeadDetail />} />
+            <Route path="/conversador" element={<Conversador />} />
+            <Route path="/produtos" element={<Produtos />} />
             <Route path="/sellers" element={<Sellers />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/team" element={<Team />} />

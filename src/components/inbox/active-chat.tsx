@@ -43,6 +43,22 @@ export function ActiveChat({ lead, interactions }: ActiveChatProps) {
     await supabase.from('leads').update({ ia_ativa: checked }).eq('id', lead.id)
   }
 
+  const handleSend = async () => {
+    if (!message.trim() || !lead) return
+    await supabase.from('interacoes_sdr').insert({
+      lead_id: lead.id,
+      mensagem_ia: message.trim(),
+      mensagem_cliente: null,
+      intencao_detectada: 'manual',
+      sentimento: 'neutro',
+    })
+    await supabase
+      .from('leads')
+      .update({ ultimo_contato: new Date().toISOString() })
+      .eq('id', lead.id)
+    setMessage('')
+  }
+
   if (!lead) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#0B0F19]">
@@ -109,9 +125,14 @@ export function ActiveChat({ lead, interactions }: ActiveChatProps) {
           placeholder="Digite uma mensagem..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           className="bg-[#0B0F19] border-white/5 text-white placeholder:text-slate-500"
         />
-        <Button size="icon" className="bg-[#00D1B2] hover:bg-[#00B89E] text-black shrink-0">
+        <Button
+          size="icon"
+          onClick={handleSend}
+          className="bg-[#00D1B2] hover:bg-[#00B89E] text-black shrink-0"
+        >
           <Send className="h-4 w-4" />
         </Button>
       </div>

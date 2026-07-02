@@ -7,6 +7,7 @@ import {
   BarChart3,
   Settings,
   ShieldCheck,
+  MessagesSquare,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -29,6 +30,7 @@ export function AppSidebar() {
   const items = [
     { name: 'Painel', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Leads', path: '/leads', icon: Users },
+    { name: 'Conversador', path: '/conversador', icon: MessagesSquare },
     { name: 'Produtos', path: '/produtos', icon: Package },
     { name: 'Vendedores', path: '/sellers', icon: UserSquare },
     { name: 'Relatórios', path: '/relatorios', icon: BarChart3 },
