@@ -13,16 +13,14 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
     const { lead_id } = await req.json()
     if (!lead_id) {
       return new Response(JSON.stringify({ error: 'lead_id is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
@@ -38,50 +36,34 @@ Deno.serve(async (req: Request) => {
       .limit(30)
 
     if (!interactions || interactions.length === 0) {
-      return new Response(
-        JSON.stringify({ summary: 'Sem interações suficientes para gerar resumo.' }),
-        {
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        },
-      )
+      return new Response(JSON.stringify({ summary: 'Sem interações suficientes para gerar resumo.' }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
     }
 
     const chatText = interactions
-      .map((i) => `Cliente: ${i.mensagem_cliente || ''}\nAna: ${i.mensagem_ia || ''}`)
+      .map(i => `Cliente: ${i.mensagem_cliente || ''}\nAna: ${i.mensagem_ia || ''}`)
       .join('\n')
 
     if (!GEMINI_API_KEY) {
       const lastMsg = interactions[interactions.length - 1]
-      return new Response(
-        JSON.stringify({
-          summary: `• Cliente iniciou conversa sobre seguro\n• ${interactions.length} mensagens trocadas\n• Última interação: ${lastMsg?.mensagem_ia || 'Sem resposta'}`,
-        }),
-        { headers: { 'Content-Type': 'application/json', ...corsHeaders } },
-      )
+      return new Response(JSON.stringify({
+        summary: `• Cliente iniciou conversa sobre seguro\n• ${interactions.length} mensagens trocadas\n• Última interação: ${lastMsg?.mensagem_ia || 'Sem resposta'}`,
+      }), { headers: { 'Content-Type': 'application/json', ...corsHeaders } })
     }
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `Resuma esta conversa em exatamente 3 pontos bullet (use •):\n\n${chatText}`,
-                },
-              ],
-            },
-          ],
+          contents: [{ parts: [{ text: `Resuma esta conversa em exatamente 3 pontos bullet (use •):\n\n${chatText}` }] }],
         }),
       },
     )
 
     const data = await res.json()
-    const summary =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Não foi possível gerar o resumo.'
+    const summary = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Não foi possível gerar o resumo.'
 
     return new Response(JSON.stringify({ summary }), {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -89,8 +71,7 @@ Deno.serve(async (req: Request) => {
   } catch (err) {
     console.error('[ia-summary] Error:', err)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })
